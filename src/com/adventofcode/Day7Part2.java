@@ -163,6 +163,7 @@ public class Day7Part2 {
                         break;
                     case 99:
                         this.state = State.HALTED;
+                        this.pointer = this.pointer + 1;
                         return;
                     default:
                         this.state = State.ERROR;

@@ -163,7 +163,7 @@ public class Day11Part2 {
                         op1 = getAddress(modes[2], this.pointer + 1);
                         op2 = getAddress(modes[1], this.pointer + 2);
                         op3 = getAddress(modes[0], this.pointer + 3);
-                        this.codes.put(op3, this.codes.getOrDefault(op1, 0l) == this.codes.getOrDefault(op2, 0l) ? 1l : 0l);
+                        this.codes.put(op3, this.codes.getOrDefault(op1, 0l).longValue() == this.codes.getOrDefault(op2, 0l).longValue() ? 1l : 0l);
                         this.pointer = this.pointer + 4;
                         break;
                     case 9:
@@ -174,6 +174,7 @@ public class Day11Part2 {
                         break;
                     case 99:
                         this.state = State.HALTED;
+                        this.pointer = this.pointer + 1;
                         return;
                     default:
                         this.state = State.ERROR;
@@ -184,7 +185,7 @@ public class Day11Part2 {
             return;
         }
 
-        private long getAddress(int mode, long pointer) {
+        private long getAddress(char mode, long pointer) {
             switch (mode) {
                 case '1':
                     return pointer;

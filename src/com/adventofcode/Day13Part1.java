@@ -11,15 +11,44 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
-public class Day9Part2 {
+public class Day13Part1 {
 
-    private static final String INPUT_FILE = "day9";
+    private static final String INPUT_FILE = "day13";
 
-    public static long getKeycode(long[] codes) {
+    private static int getBlockTileCount(long[] codes) {
         IntcodeComputer computer = new IntcodeComputer(codes);
-        computer.inputs.add(2l);
         computer.evaluate();
-        return computer.outputs.getFirst();
+
+        int counter = 0;
+        while (!computer.outputs.isEmpty()) {
+            computer.outputs.poll();
+            computer.outputs.poll();
+
+            TileType tileType = getTileType(computer.outputs.poll().intValue());
+            if (tileType == TileType.BLOCK) {
+                counter++;
+            }
+        }
+        return counter;
+    }
+
+    private static TileType getTileType(int signal) {
+        switch (signal) {
+            case 1:
+                return TileType.WALL;
+            case 2:
+                return TileType.BLOCK;
+            case 3:
+                return TileType.HORIZONTAL_PADDLE;
+            case 4:
+                return TileType.BALL;
+            default:
+                return TileType.EMPTY;
+        }
+    }
+
+    enum TileType {
+        EMPTY, WALL, BLOCK, HORIZONTAL_PADDLE, BALL
     }
 
     static class IntcodeComputer {
@@ -154,19 +183,18 @@ public class Day9Part2 {
 
     public static void main(String[] args) throws FileNotFoundException {
         long[] codes = getInput(CommonUtils.getInputFile(INPUT_FILE));
-        
-        System.out.println(getKeycode(codes));
+        System.out.println(getBlockTileCount(codes));
     }
 
     private static long[] getInput(String path) throws FileNotFoundException {
         try (Scanner scanner = new Scanner(new File(path))) {
+            scanner.useDelimiter(",");
             scanner.useDelimiter(",");
 
             List<Long> codes = new ArrayList<>();
             while (scanner.hasNext()) {
                 codes.add(scanner.nextLong());
             }
-
             return codes.stream().mapToLong(i -> i).toArray();
         }
     }
