@@ -3,132 +3,62 @@ package com.adventofcode;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Scanner;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
-public class Day13Part2 {
+public class Day19Part2 {
 
-    private static final String INPUT_FILE = "day13";
+    private static final String INPUT_FILE = "day19";
 
-    public static int getHighScore(long[] codes) {
+    private static final int CELL_SPACE = 0;
+    private static final int CELL_BEAM = 1;
+
+    private static final int SIZE_SQUARE = 100;
+
+    public static int[] getCoordsOfArea(long[] codes) {
+        int x = 0;
+        for (int y = SIZE_SQUARE - 1; true; y++) {
+            for (int c = getOutput(codes, x, y); c == CELL_SPACE; c = getOutput(codes, x, y)) {
+                x++;
+            }
+
+            if (getOutput(codes, x + SIZE_SQUARE - 1, y) == CELL_SPACE) {
+                continue;
+            }
+            if (getOutput(codes, x, y - SIZE_SQUARE + 1) == CELL_SPACE) {
+                continue;
+            }
+            if (getOutput(codes, x + SIZE_SQUARE - 1, y - SIZE_SQUARE + 1) == CELL_SPACE) {
+                continue;
+            }
+            return new int[]{x, y - SIZE_SQUARE + 1};
+        }
+    }
+
+    private static int getOutput(long[] codes, int x, int y) {
         IntcodeComputer computer = new IntcodeComputer(codes);
+        computer.inputs.add((long) x);
+        computer.inputs.add((long) y);
+
         computer.evaluate();
 
-        ArcadeGame arcadeGame = new ArcadeGame();
-        arcadeGame.updateState(computer.outputs);
-
-        while (arcadeGame.board.values().stream().anyMatch(x -> x == ArcadeGame.TileType.BLOCK)) {
-            computer.inputs.add((long) arcadeGame.getNextMove());
-            computer.evaluate();
-
-            arcadeGame.updateState(computer.outputs);
-        }
-        return arcadeGame.score;
-    }
-
-    static class ArcadeGame {
-
-        private static final int SCORE_X = -1;
-        private static final int SCORE_Y = 0;
-
-        private int score;
-        private Map<Position, TileType> board;
-
-        ArcadeGame() {
-            this.score = 0;
-            this.board = new HashMap<>();
-        }
-
-        private void updateState(LinkedList<Long> values) {
-            while (!values.isEmpty()) {
-                int x = values.poll().intValue();
-                int y = values.poll().intValue();
-                int t = values.poll().intValue();
-
-                if (x == SCORE_X && y == SCORE_Y) {
-                    this.score = t;
-                } else {
-                    this.board.put(new Position(x, y), getTileType(t));
-                }
-            }
-        }
-
-        private int getNextMove() {
-            long xPaddle = this.board.entrySet().stream()
-                    .filter(entry -> entry.getValue() == TileType.HORIZONTAL_PADDLE)
-                    .findFirst()
-                    .map(entry -> entry.getKey().x)
-                    .get();
-
-            long xBall = this.board.entrySet().stream()
-                    .filter(entry -> entry.getValue() == TileType.BALL)
-                    .findFirst()
-                    .map(entry -> entry.getKey().x)
-                    .get();
-
-            if (xPaddle == xBall) {
-                return 0;
-            }
-            return xPaddle < xBall ? 1 : -1;
-        }
-
-        private static TileType getTileType(int signal) {
-            switch (signal) {
-                case 1:
-                    return TileType.WALL;
-                case 2:
-                    return TileType.BLOCK;
-                case 3:
-                    return TileType.HORIZONTAL_PADDLE;
-                case 4:
-                    return TileType.BALL;
-                default:
-                    return TileType.EMPTY;
-            }
-        }
-
-        enum TileType {
-            EMPTY, WALL, BLOCK, HORIZONTAL_PADDLE, BALL
-        }
-    }
-
-    static class Position {
-        long x;
-        long y;
-
-        Position(long x, long y) {
-            this.x = x;
-            this.y = y;
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            Position other = (Position) obj;
-            return this.x == other.x && this.y == other.y;
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(this.x, this.y);
-        }
+        return computer.outputs.poll().intValue();
     }
 
     static class IntcodeComputer {
 
-        private LinkedList<Long> inputs;
-        private LinkedList<Long> outputs;
-        private State state;
+        public LinkedList<Long> inputs;
+        public LinkedList<Long> outputs;
+        public State state;
 
-        private Map<Long, Long> codes;
-        private long pointer;
-        private long relativeBase;
+        public Map<Long, Long> codes;
+        public long pointer;
+        public long relativeBase;
 
         enum State {
             RUNNING, WAITING_FOR_INPUT, HALTED, EXITED, ERROR
@@ -238,6 +168,17 @@ public class Day13Part2 {
             return;
         }
 
+        public IntcodeComputer clone() {
+            IntcodeComputer computer = new IntcodeComputer(new long[0]);
+            computer.inputs = this.inputs;
+            computer.outputs = this.outputs;
+            computer.state = this.state;
+            computer.codes = this.codes;
+            computer.pointer = this.pointer;
+            computer.relativeBase = this.relativeBase;
+            return computer;
+        }
+
         private long getAddress(char mode, long pointer) {
             switch (mode) {
                 case '1':
@@ -252,12 +193,13 @@ public class Day13Part2 {
 
     public static void main(String[] args) throws FileNotFoundException {
         long[] codes = getInput(CommonUtils.getInputFile(INPUT_FILE));
-        System.out.println(getHighScore(codes));
+
+        int[] coords = getCoordsOfArea(codes);
+        System.out.println(coords[0] * 10000 + coords[1]);
     }
 
     private static long[] getInput(String path) throws FileNotFoundException {
         try (Scanner scanner = new Scanner(new File(path))) {
-            scanner.useDelimiter(",");
             scanner.useDelimiter(",");
 
             List<Long> codes = new ArrayList<>();

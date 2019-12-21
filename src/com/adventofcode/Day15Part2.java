@@ -3,99 +3,173 @@ package com.adventofcode;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Scanner;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
-public class Day13Part2 {
+public class Day15Part2 {
 
-    private static final String INPUT_FILE = "day13";
+    private static final String INPUT_FILE = "day15";
 
-    public static int getHighScore(long[] codes) {
-        IntcodeComputer computer = new IntcodeComputer(codes);
-        computer.evaluate();
+    private static final char CELL_WALL = '#';
+    private static final char CELL_EMPTY = '.';
+    private static final char CELL_TARGET = 'D';
+    private static final char CELL_OXYGEN = 'O';
 
-        ArcadeGame arcadeGame = new ArcadeGame();
-        arcadeGame.updateState(computer.outputs);
+    private static final int[] DIRECTIONS = new int[]{1, 2, 3, 4};
 
-        while (arcadeGame.board.values().stream().anyMatch(x -> x == ArcadeGame.TileType.BLOCK)) {
-            computer.inputs.add((long) arcadeGame.getNextMove());
-            computer.evaluate();
+    public static int getMinSteps(long[] codes) {
+        RepairDroid droid = new RepairDroid(codes);
+        explore(droid);
 
-            arcadeGame.updateState(computer.outputs);
-        }
-        return arcadeGame.score;
+        Position position = droid.map.entrySet().stream()
+                .filter(entry -> entry.getValue() == CELL_TARGET)
+                .findFirst().get().getKey();
+
+        Set<Position> targets = droid.map.entrySet().stream()
+                .filter(entry -> entry.getValue() == CELL_EMPTY)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toSet());
+
+        return spread(Arrays.asList(position), targets);
     }
 
-    static class ArcadeGame {
-
-        private static final int SCORE_X = -1;
-        private static final int SCORE_Y = 0;
-
-        private int score;
-        private Map<Position, TileType> board;
-
-        ArcadeGame() {
-            this.score = 0;
-            this.board = new HashMap<>();
+    private static int spread(List<Position> positions, Set<Position> targets) {
+        if (targets.isEmpty()) {
+            return 0;
         }
 
-        private void updateState(LinkedList<Long> values) {
-            while (!values.isEmpty()) {
-                int x = values.poll().intValue();
-                int y = values.poll().intValue();
-                int t = values.poll().intValue();
+        List<Position> newPositions = new ArrayList<>();
+        for (Position position : positions) {
+            Position p1 = new Position(position.x + 1, position.y);
+            Position p2 = new Position(position.x - 1, position.y);
+            Position p3 = new Position(position.x, position.y + 1);
+            Position p4 = new Position(position.x, position.y - 1);
 
-                if (x == SCORE_X && y == SCORE_Y) {
-                    this.score = t;
-                } else {
-                    this.board.put(new Position(x, y), getTileType(t));
-                }
+            if (targets.remove(p1)) {
+                newPositions.add(p1);
+            }
+            if (targets.remove(p2)) {
+                newPositions.add(p2);
+            }
+            if (targets.remove(p3)) {
+                newPositions.add(p3);
+            }
+            if (targets.remove(p4)) {
+                newPositions.add(p4);
             }
         }
+        return 1 + spread(newPositions, targets);
+    }
 
-        private int getNextMove() {
-            long xPaddle = this.board.entrySet().stream()
-                    .filter(entry -> entry.getValue() == TileType.HORIZONTAL_PADDLE)
-                    .findFirst()
-                    .map(entry -> entry.getKey().x)
-                    .get();
+    private static void explore(RepairDroid droid) {
+        // Explore different directions
+        for (int i = 0; i < DIRECTIONS.length; i++) {
+            Position position = droid.getPosition(DIRECTIONS[i]);
 
-            long xBall = this.board.entrySet().stream()
-                    .filter(entry -> entry.getValue() == TileType.BALL)
-                    .findFirst()
-                    .map(entry -> entry.getKey().x)
-                    .get();
-
-            if (xPaddle == xBall) {
-                return 0;
+            // Do not repeat yourself..
+            if (droid.map.containsKey(position)) {
+                continue;
             }
-            return xPaddle < xBall ? 1 : -1;
+
+            droid.explore(DIRECTIONS[i]);
+
+            switch (droid.map.get(position)) {
+                case CELL_TARGET:
+                    droid.explore(getOppositeDirection(DIRECTIONS[i]));
+                    break;
+                case CELL_EMPTY:
+                    explore(droid);
+                    droid.explore(getOppositeDirection(DIRECTIONS[i]));
+                    break;
+                case CELL_WALL:
+                    // The droid didn't move in this case. Continue exploring other directions
+                    break;
+            }
+        }
+    }
+
+    private static int getOppositeDirection(int direction) {
+        switch (direction) {
+            case 1:
+                return 2;
+            case 2:
+                return 1;
+            case 3:
+                return 4;
+            case 4:
+                return 3;
+        }
+        throw new IllegalArgumentException();
+    }
+
+    static class RepairDroid {
+
+        private Position pointer;
+        private Map<Position, Character> map;
+
+        private IntcodeComputer computer;
+
+        RepairDroid(long[] codes) {
+            this.pointer = new Position(0, 0);
+
+            this.map = new HashMap<>();
+            this.map.put(this.pointer, CELL_EMPTY);
+
+            this.computer = new IntcodeComputer(codes);
         }
 
-        private static TileType getTileType(int signal) {
-            switch (signal) {
+        public boolean explore(int direction) {
+            Position position = getPosition(direction);
+            computer.inputs.add((long) direction);
+            computer.evaluate();
+
+            int status = computer.outputs.poll().intValue();
+            return updateState(position, status);
+        }
+
+        private Position getPosition(int direction) {
+            switch (direction) {
                 case 1:
-                    return TileType.WALL;
+                    return getPosition(0, -1);
                 case 2:
-                    return TileType.BLOCK;
+                    return getPosition(0, 1);
                 case 3:
-                    return TileType.HORIZONTAL_PADDLE;
+                    return getPosition(-1, 0);
                 case 4:
-                    return TileType.BALL;
-                default:
-                    return TileType.EMPTY;
+                    return getPosition(1, 0);
             }
+            throw new IllegalArgumentException();
         }
 
-        enum TileType {
-            EMPTY, WALL, BLOCK, HORIZONTAL_PADDLE, BALL
+        private Position getPosition(int directionX, int directionY) {
+            long x = pointer.x + directionX;
+            long y = pointer.y + directionY;
+            return new Position(x, y);
+        }
+
+        private boolean updateState(Position position, int signal) {
+            switch (signal) {
+                case 0:
+                    this.map.put(position, CELL_WALL);
+                    return false;
+                case 1:
+                    this.pointer = position;
+                    this.map.put(this.pointer, CELL_EMPTY);
+                    return false;
+                default:
+                    this.pointer = position;
+                    this.map.put(this.pointer, CELL_TARGET);
+                    return true;
+            }
         }
     }
 
@@ -122,13 +196,13 @@ public class Day13Part2 {
 
     static class IntcodeComputer {
 
-        private LinkedList<Long> inputs;
-        private LinkedList<Long> outputs;
-        private State state;
+        public LinkedList<Long> inputs;
+        public LinkedList<Long> outputs;
+        public State state;
 
-        private Map<Long, Long> codes;
-        private long pointer;
-        private long relativeBase;
+        public Map<Long, Long> codes;
+        public long pointer;
+        public long relativeBase;
 
         enum State {
             RUNNING, WAITING_FOR_INPUT, HALTED, EXITED, ERROR
@@ -238,6 +312,17 @@ public class Day13Part2 {
             return;
         }
 
+        public IntcodeComputer clone() {
+            IntcodeComputer computer = new IntcodeComputer(new long[0]);
+            computer.inputs = this.inputs;
+            computer.outputs = this.outputs;
+            computer.state = this.state;
+            computer.codes = this.codes;
+            computer.pointer = this.pointer;
+            computer.relativeBase = this.relativeBase;
+            return computer;
+        }
+
         private long getAddress(char mode, long pointer) {
             switch (mode) {
                 case '1':
@@ -252,7 +337,7 @@ public class Day13Part2 {
 
     public static void main(String[] args) throws FileNotFoundException {
         long[] codes = getInput(CommonUtils.getInputFile(INPUT_FILE));
-        System.out.println(getHighScore(codes));
+        System.out.println(getMinSteps(codes));
     }
 
     private static long[] getInput(String path) throws FileNotFoundException {
