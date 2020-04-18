@@ -5,7 +5,7 @@ import java.net.URL;
 public class CommonUtils {
 
     public static String getInputFile(String name) {
-        Day1Part1 solver = new Day1Part1();
+        CommonUtils solver = new CommonUtils();
 
         URL resource = solver.getClass().getClassLoader().getResource(name);
         if (resource == null) {

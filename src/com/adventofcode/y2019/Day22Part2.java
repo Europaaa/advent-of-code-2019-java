@@ -9,7 +9,7 @@ import java.util.Scanner;
 
 public class Day22Part2 {
 
-    private static final String INPUT_FILE = "day22";
+    private static final String INPUT_FILE = "y2019/day22";
 
     public static long getCardAtPosition(long cards, long target, String[] actions, long repeats) {
         long position = target;
