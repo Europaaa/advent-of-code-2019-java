@@ -1,5 +1,7 @@
 package com.adventofcode.y2015;
 
+import com.adventofcode.utils.CommonUtils;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;

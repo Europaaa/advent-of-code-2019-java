@@ -1,5 +1,7 @@
 package com.adventofcode.y2015;
 
+import com.adventofcode.utils.CommonUtils;
+
 import javax.xml.bind.DatatypeConverter;
 import java.io.File;
 import java.io.FileNotFoundException;

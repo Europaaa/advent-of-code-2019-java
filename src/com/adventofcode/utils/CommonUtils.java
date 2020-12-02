@@ -1,4 +1,4 @@
-package com.adventofcode.y2015;
+package com.adventofcode.utils;
 
 import java.net.URL;
 

@@ -1,5 +1,6 @@
 package com.adventofcode.y2015;
 
+import com.adventofcode.utils.CommonUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import java.io.File;
