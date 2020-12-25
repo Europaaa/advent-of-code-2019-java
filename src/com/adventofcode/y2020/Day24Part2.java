@@ -26,6 +26,7 @@ public class Day24Part2 {
         SE(1, -1),
         SW(0, -1);
 
+        // Map hex directions to standard x, y
         private int x;
         private int y;
 

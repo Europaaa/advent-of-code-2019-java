@@ -21,18 +21,7 @@ public class Day20Part1 {
 
     private static final Pattern PATTERN_ID = Pattern.compile("Tile\\s(\\d+):");
 
-    private Map<Integer, Tile> tiles;
-
-    public Day20Part1() {
-        this.tiles = new HashMap<>();
-    }
-
-    public Day20Part1 addTile(int id, char[][] images) {
-        this.tiles.put(id, new Tile(id, images));
-        return this;
-    }
-
-    private class Tile {
+    private static class Tile {
         private int id;
         private char[][] images;
 
@@ -76,7 +65,7 @@ public class Day20Part1 {
         }
     }
 
-    public long getCorners() {
+    public static long calculate(Map<Integer, Tile> tiles) {
         tiles.values().forEach(Tile::setBorders);
 
         Map<String, List<Integer>> borders = new HashMap<>();
@@ -140,15 +129,15 @@ public class Day20Part1 {
     }
 
     public static void main(String[] args) throws FileNotFoundException {
-        Day20Part1 day20Part1 = getInput(CommonUtils.getInputFile(INPUT_FILE));
+        Map<Integer, Tile> tiles = getInput(CommonUtils.getInputFile(INPUT_FILE));
 
-        long result = day20Part1.getCorners();
+        long result = calculate(tiles);
         System.out.println(result);
     }
 
-    private static Day20Part1 getInput(String path) throws FileNotFoundException {
+    private static Map<Integer, Tile> getInput(String path) throws FileNotFoundException {
         try (Scanner scanner = new Scanner(new File(path))) {
-            Day20Part1 day20Part1 = new Day20Part1();
+            Map<Integer, Tile> tiles = new HashMap<>();
 
             while (scanner.hasNext()) {
                 List<char[]> images = new ArrayList<>();
@@ -172,10 +161,9 @@ public class Day20Part1 {
                     }
                 }
 
-                day20Part1.addTile(id, images.toArray(new char[0][]));
+                tiles.put(id, new Tile(id, images.toArray(new char[0][])));
             }
-
-            return day20Part1;
+            return tiles;
         }
     }
 }
